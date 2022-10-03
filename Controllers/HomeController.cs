@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
@@ -26,8 +27,42 @@ namespace AdvanWeb.Controllers
 
         public IActionResult Index()
         {
-           
-                return View();
+
+            var url = _configuration.GetValue<string>("APIUrls:url5");
+            var resp = new List<ResponseData>();
+
+            try
+            {
+                //var content = new StringContent(jObj, Encoding.UTF8, "application/json");
+                var request = _client.GetAsync(url).Result;
+                var result = request.Content.ReadAsStringAsync();
+                if (request.IsSuccessStatusCode)
+                    resp =  JsonConvert.DeserializeObject<List<ResponseData>>(result.Result);
+                if (resp != null)
+                {
+
+                    ViewBag.users = resp.Count;
+                    return View(resp);
+
+                }
+                else
+                {
+                    dynamic transRef = TempData["Message"];
+
+                    Alert("error", transRef, NotificationType.error);
+
+                }
+            }
+            catch (Exception ex)
+            {
+                _ = ex.Message;
+                // _notifyService.Error($"{ex.Message}");
+
+
+            }
+
+            return View();
+
         }
 
         [HttpGet]
@@ -57,13 +92,16 @@ namespace AdvanWeb.Controllers
                     if (resp.AccountNumber != null )
                     {
 
-                        TempData["message"] = "Account Balance" + " " +  resp.CurrentAccountBalance  ;
+                        TempData["message"] = "acct number" + " " + resp.AccountNumber + " was generated" + " " + resp.AccountName;
+
 
                         dynamic transRef = TempData["Message"];
 
                         Alert("success", transRef, NotificationType.success);
 
                         // _notifyService.Success($"{resp.message}");
+
+                        return RedirectToAction("Login");
 
                     }
                     else
@@ -156,14 +194,14 @@ namespace AdvanWeb.Controllers
                     if (resp.AccountNumber != null)
                     {
 
-                        TempData["message"] = "acct number" + " " + resp.AccountNumber + " was generated" + " " + resp.FirstName + "" + resp.LastName;
+                        TempData["message"] = "acct number" + " " + resp.AccountNumber + " was generated" + " " + resp.AccountName;
 
                         dynamic transRef = TempData["Message"];
 
                         Alert("success", transRef, NotificationType.success);
 
                         // _notifyService.Success($"{resp.message}");
-
+                        return RedirectToAction("Index");
                     }
                     else
                     {
@@ -190,7 +228,7 @@ namespace AdvanWeb.Controllers
         {
             if (ModelState.IsValid)
             {
-                var url = _configuration.GetValue<string>("APIUrls:url3");
+                var url = _configuration.GetValue<string>("APIUrls:url4");
                 ResponseData resp = new ResponseData();
 
                 try
@@ -205,9 +243,9 @@ namespace AdvanWeb.Controllers
                         resp = JsonConvert.DeserializeObject<ResponseData>(result.Result);
                     if (resp.AccountNumber != null)
                     {
+                        TempData["message"] = "Account Balance" + " " + resp.CurrentAccountBalance;
 
-                        TempData["message"] = "acct number" + " " + resp.AccountNumber + " was generated" + " " + resp.FirstName + "" + resp.LastName;
-
+         
                         dynamic transRef = TempData["Message"];
 
                         Alert("success", transRef, NotificationType.success);
